@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinAI - Smart Ethical Wealth</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+        .mono { font-family: 'Space Mono', monospace; }
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --text-primary: #e2e8f0;
+            --accent-primary: #6366f1;
+            --accent-secondary: #22d3ee;
+        }
+        body { background: var(--bg-primary); color: var(--text-primary); margin: 0; overflow-x: hidden; }
+        .card-glass { background: var(--bg-secondary); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 16px; backdrop-filter: blur(10px); }
+        .gradient-text { background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-primary), #8b5cf6); color: white; border-radius: 12px; padding: 10px 24px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
+        .input-field { background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 12px 16px; color: var(--text-primary); width: 100%; outline: none; }
+        .sidebar-item { padding: 12px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; opacity: 0.6; transition: 0.3s; }
+        .sidebar-item.active { background: rgba(99, 102, 241, 0.12); opacity: 1; color: var(--accent-primary); font-weight: 600; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--bg-secondary); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 20px; padding: 32px; width: 100%; max-width: 480px; }
+        .fade-in { animation: fadeInUp 0.4s ease forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="h-full">
+    <div id="app" class="h-full w-full flex flex-col">
+        
+        <div id="auth-screen" class="h-full w-full flex items-center justify-center min-h-screen">
+            <div class="card-glass fade-in p-10 w-full max-w-md mx-4 text-center">
+                <h1 class="gradient-text text-5xl font-extrabold mb-4 tracking-tighter">FinAI</h1>
+                <p class="opacity-50 mb-8 italic">Ethical Wealth Manager</p>
+                <form onsubmit="handleAuth(event)" class="space-y-4">
+                    <input type="email" class="input-field" placeholder="Email" required>
+                    <input type="password" class="input-field" placeholder="Password" required>
+                    <button type="submit" class="btn-primary w-full py-4 text-lg">Enter Dashboard</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="main-app" style="display:none;" class="h-full w-full flex">
+            <aside class="w-64 card-glass rounded-none border-r border-indigo-500/10 p-6 hidden md:flex flex-col flex-shrink-0">
+                <h1 class="gradient-text text-3xl font-bold mb-10 px-3">FinAI</h1>
+                <nav class="space-y-2">
+                    <div class="sidebar-item active" onclick="showSection('dashboard', this)">📊 Dashboard</div>
+                    <div class="sidebar-item" onclick="showSection('budget', this)">🎯 Budget Goals</div>
+                    <div class="sidebar-item" onclick="showSection('ai', this)">🤖 AI Advisor</div>
+                </nav>
+            </aside>
+
+            <main class="flex-1 overflow-auto p-6 lg:p-10">
+                <header class="flex justify-between items-center mb-10">
+                    <div>
+                        <h2 id="section-title" class="text-3xl font-bold">Dashboard</h2>
+                        <p class="opacity-50 tracking-wide">Currency: Indian Rupee (₹)</p>
+                    </div>
+                    <button onclick="openAddModal()" class="btn-primary shadow-xl shadow-indigo-500/10">+ New Entry</button>
+                </header>
+
+                <section id="dashboard-section" class="fade-in space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="card-glass p-6 border-l-4 border-indigo-500">
+                            <p class="text-xs uppercase opacity-40 mb-1">Current Balance</p>
+                            <h3 id="display-balance" class="text-3xl font-bold mono gradient-text">₹0.00</h3>
+                        </div>
+                        <div class="card-glass p-6 border-l-4 border-emerald-500">
+                            <p class="text-xs uppercase opacity-40 mb-1">Total Income</p>
+                            <h3 id="display-income" class="text-3xl font-bold text-emerald-400 mono">₹0.00</h3>
+                        </div>
+                        <div class="card-glass p-6 border-l-4 border-rose-500">
+                            <p class="text-xs uppercase opacity-40 mb-1">Total Expenses</p>
+                            <h3 id="display-expense" class="text-3xl font-bold text-rose-400 mono">₹0.00</h3>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="card-glass p-6">
+                            <h3 class="font-bold mb-4 opacity-70">Monthly Trends</h3>
+                            <canvas id="barChart" height="150"></canvas>
+                        </div>
+                        <div class="card-glass p-6">
+                            <h3 class="font-bold mb-4 opacity-70">Category Comparison</h3>
+                            <canvas id="pieChart" height="150"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card-glass p-6">
+                        <h3 class="font-bold text-xl mb-6">Recent History</h3>
+                        <div id="transaction-list" class="space-y-3"></div>
+                        <div id="empty-state" class="py-10 text-center opacity-30 italic">No transactions recorded.</div>
+                    </div>
+                </section>
+
+                <section id="budget-section" class="fade-in" style="display:none;">
+                    <div class="card-glass p-8 mb-8">
+                        <h3 class="text-xl font-bold mb-6">Set Category Limits</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <select id="goal-category" class="input-field">
+                                <option value="Food">🍔 Food</option>
+                                <option value="Rent">🏠 Rent</option>
+                                <option value="Entertainment">🎮 Entertainment</option>
+                                <option value="Shopping">🛍 Shopping</option>
+                                <option value="Bills">📄 Bills</option>
+                            </select>
+                            <input type="number" id="goal-amount" class="input-field" placeholder="Limit Amount (₹)">
+                            <button onclick="saveBudgetGoal()" class="btn-primary">Set Goal</button>
+                        </div>
+                    </div>
+                    <div id="budget-progress" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                </section>
+
+                <section id="ai-section" class="fade-in" style="display:none;">
+                    <div class="card-glass p-8 border-cyan-500/30">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">🤖 AI Moral Insights</h3>
+                        <div class="space-y-6">
+                            <div class="p-6 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                                <h4 class="font-bold text-indigo-400 mb-2">Spending Habits</h4>
+                                <p id="ai-insights-text">Your AI insights will appear once you add transactions.</p>
+                            </div>
+                            <div class="p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                                <h4 class="font-bold text-emerald-400 mb-2">⚖️ Ethical Tip</h4>
+                                <p id="ai-ethics-text">FinAI helps align your wealth with your ethics.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <div id="transaction-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">Add Record</h3>
+                    <button onclick="closeAddModal()" class="text-2xl opacity-40 hover:opacity-100">✕</button>
+                </div>
+                <form id="tx-form" onsubmit="addTransaction(event)" class="space-y-5">
+                    <div class="flex gap-2 p-1 bg-white/5 rounded-xl">
+                        <button type="button" id="btn-expense" onclick="setTxType('expense')" class="flex-1 py-3 rounded-lg font-bold bg-indigo-600 text-white">Expense</button>
+                        <button type="button" id="btn-income" onclick="setTxType('income')" class="flex-1 py-3 rounded-lg font-bold opacity-40">Income</button>
+                    </div>
+                    <select id="form-category" class="input-field">
+                        <option value="Food">🍔 Food</option>
+                        <option value="Salary">💼 Salary</option>
+                        <option value="Rent">🏠 Rent</option>
+                        <option value="Bills">📄 Bills</option>
+                        <option value="Entertainment">🎮 Entertainment</option>
+                        <option value="Shopping">🛍 Shopping</option>
+                        <option value="Other">📦 Other</option>
+                    </select>
+                    <input type="text" id="form-desc" class="input-field" placeholder="What was this for?" required>
+                    <input type="number" id="form-amount" class="input-field" placeholder="Amount (₹)" required>
+                    <button type="submit" class="btn-primary w-full py-4 shadow-lg shadow-indigo-500/20">Save Transaction</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let transactions = [];
+        let budgetGoals = {};
+        let currentTxType = 'expense';
+        let bChart, pChart;
+
+        const emojiMap = { "Food": "🍔", "Salary": "💼", "Rent": "🏠", "Bills": "📄", "Entertainment": "🎮", "Shopping": "🛍", "Other": "📦" };
+
+        function handleAuth(event) {
+            event.preventDefault();
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            initCharts();
+        }
+
+        function showSection(section, el) {
+            ['dashboard', 'budget', 'ai'].forEach(s => {
+                document.getElementById(s + '-section').style.display = (s === section) ? 'block' : 'none';
+            });
+            document.getElementById('section-title').innerText = section.charAt(0).toUpperCase() + section.slice(1);
+            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            if (section === 'dashboard') updateCharts();
+        }
+
+        function openAddModal() { document.getElementById('transaction-modal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('transaction-modal').style.display = 'none'; }
+
+        function setTxType(type) {
+            currentTxType = type;
+            document.getElementById('btn-expense').className = type === 'expense' ? 'flex-1 py-3 rounded-lg font-bold bg-indigo-600 text-white' : 'flex-1 py-3 rounded-lg font-bold opacity-40';
+            document.getElementById('btn-income').className = type === 'income' ? 'flex-1 py-3 rounded-lg font-bold bg-emerald-600 text-white' : 'flex-1 py-3 rounded-lg font-bold opacity-40';
+            if (type === 'income') document.getElementById('form-category').value = "Salary";
+            else if (document.getElementById('form-category').value === "Salary") document.getElementById('form-category').value = "Food";
+        }
+
+        function addTransaction(event) {
+            event.preventDefault();
+            const amount = parseFloat(document.getElementById('form-amount').value);
+            const desc = document.getElementById('form-desc').value;
+            const category = document.getElementById('form-category').value;
+
+            transactions.unshift({ amount, desc, category, type: currentTxType, id: Date.now() });
+            
+            updateUI();
+            updateAI();
+            updateCharts();
+            
+            event.target.reset();
+            setTxType('expense');
+            closeAddModal();
+        }
+
+        function saveBudgetGoal() {
+            const cat = document.getElementById('goal-category').value;
+            const amt = parseFloat(document.getElementById('goal-amount').value);
+            if (amt > 0) {
+                budgetGoals[cat] = amt;
+                updateUI();
+                alert(`Budget for ${cat} set to ₹${amt}`);
+            }
+        }
+
+        function updateUI() {
+            const list = document.getElementById('transaction-list');
+            const empty = document.getElementById('empty-state');
+            let inc = 0, exp = 0;
+            let catSpent = {};
+
+            if (transactions.length > 0) {
+                empty.style.display = 'none';
+                list.innerHTML = transactions.map(t => {
+                    if (t.type === 'income') inc += t.amount;
+                    else {
+                        exp += t.amount;
+                        catSpent[t.category] = (catSpent[t.category] || 0) + t.amount;
+                    }
+                    return `
+                        <div class="p-4 card-glass border-none flex justify-between items-center fade-in bg-white/5">
+                            <div class="flex items-center gap-4">
+                                <span class="text-2xl">${emojiMap[t.category] || '💰'}</span>
+                                <div><p class="font-bold">${t.desc}</p><p class="text-[10px] opacity-40 uppercase tracking-widest">${t.category}</p></div>
+                            </div>
+                            <p class="font-bold mono ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${t.type === 'income' ? '+' : '-'}₹${t.amount.toLocaleString('en-IN')}
+                            </p>
+                        </div>`;
+                }).join('');
+            } else {
+                empty.style.display = 'block';
+                list.innerHTML = '';
+            }
+
+            document.getElementById('display-balance').innerText = `₹${(inc - exp).toLocaleString('en-IN')}`;
+            document.getElementById('display-income').innerText = `₹${inc.toLocaleString('en-IN')}`;
+            document.getElementById('display-expense').innerText = `₹${exp.toLocaleString('en-IN')}`;
+
+            const bProgress = document.getElementById('budget-progress');
+            bProgress.innerHTML = Object.keys(budgetGoals).map(cat => {
+                const spent = catSpent[cat] || 0;
+                const limit = budgetGoals[cat];
+                const pct = Math.min((spent / limit) * 100, 100);
+                return `
+                    <div class="card-glass p-5">
+                        <div class="flex justify-between mb-2">
+                            <span class="font-bold text-sm">${emojiMap[cat]} ${cat}</span>
+                            <span class="opacity-60 text-xs">₹${spent} / ₹${limit}</span>
+                        </div>
+                        <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                            <div class="${pct > 90 ? 'bg-rose-500' : 'bg-indigo-500'} h-full transition-all duration-700" style="width: ${pct}%"></div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function initCharts() {
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            
+            bChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: { labels: ['Income', 'Expense'], datasets: [{ data: [0, 0], backgroundColor: ['#10b981', '#f43f5e'] }] },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+            });
+
+            pChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#6366f1', '#22d3ee', '#f43f5e', '#fbbf24', '#8b5cf6'] }] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#e2e8f0', boxWidth: 10, font: { size: 10 } } } } }
+            });
+        }
+
+        function updateCharts() {
+            if (!bChart || !pChart) return;
+            const inc = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const exp = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            
+            bChart.data.datasets[0].data = [inc, exp];
+            bChart.update();
+
+            const cats = [...new Set(transactions.filter(t => t.type === 'expense').map(t => t.category))];
+            const catData = cats.map(c => transactions.filter(t => t.category === c).reduce((s, t) => s + t.amount, 0));
+            
+            pChart.data.labels = cats;
+            pChart.data.datasets[0].data = catData;
+            pChart.update();
+        }
+
+        function updateAI() {
+            const insights = document.getElementById('ai-insights-text');
+            const ethics = document.getElementById('ai-ethics-text');
+            if (transactions.length === 0) return;
+            const totalExp = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            const foodSpend = transactions.filter(t => t.category === 'Food').reduce((s, t) => s + t.amount, 0);
+
+            insights.innerHTML = foodSpend > totalExp * 0.4 ? "🍲 High food spend detected. Cooking more at home could save you ₹" + (foodSpend*0.15).toFixed(0) + " monthly." : "📈 Your spending habits look balanced and sustainable.";
+            ethics.innerHTML = totalExp > 5000 ? "🌍 Consider allocating 1% to a social cause to balance your wealth karma." : "🌱 Focus remains on essentials; ethical footprint is low.";
+        }
+    </script>
+</body>
+</html>
